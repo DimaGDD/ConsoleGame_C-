@@ -19,18 +19,43 @@ vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice)
 
 
 
-map<int, int> diceScores;
+map<string, int> diceScores;
 
 int main()
 {
     SetConsoleOutputCP(CP_UTF8);
 
-    diceScores[1] = 100;
-    diceScores[5] = 50;
-    diceScores[111] = 1000;
-    diceScores[123456] = 1500;
-    diceScores[23456] = 750;
-    diceScores[12345] = 500;
+    diceScores["1"] = 100;
+    diceScores["11"] = 200;
+    diceScores["111"] = 1000;
+    diceScores["1111"] = 2000;
+    diceScores["11111"] = 4000;
+    diceScores["111111"] = 8000;
+    diceScores["222"] = 200;
+    diceScores["2222"] = 400;
+    diceScores["22222"] = 800;
+    diceScores["222222"] = 1600;
+    diceScores["333"] = 300;
+    diceScores["3333"] = 600;
+    diceScores["33333"] = 1200;
+    diceScores["333333"] = 2400;
+    diceScores["444"] = 400;
+    diceScores["4444"] = 800;
+    diceScores["44444"] = 1600;
+    diceScores["444444"] = 3200;
+    diceScores["5"] = 50;
+    diceScores["55"] = 100;
+    diceScores["555"] = 500;
+    diceScores["5555"] = 1000;
+    diceScores["55555"] = 2000;
+    diceScores["555555"] = 4000;
+    diceScores["666"] = 600;
+    diceScores["6666"] = 1200;
+    diceScores["66666"] = 2400;
+    diceScores["666666"] = 4800;
+    diceScores["123456"] = 1500;
+    diceScores["23456"] = 750;
+    diceScores["12345"] = 500;
 
     mainGame();
 
@@ -42,8 +67,8 @@ void mainGame()
     bool isStartGame = true;
     
     // Переменные
-    int roundScore; // Очки раунда
-    int totalScore; // Общее количество очков
+    int roundScore = 0; // Очки раунда
+    int totalScore = 0; // Общее количество очков
     int maxScore = 1000; // Максимальное количество очков
     vector<int> rolledDice; // Кинутые кости
     vector<int> selectedDice; // Кости, которые мы отложили
@@ -112,7 +137,7 @@ void mainGame()
             {
                 if (!qButtonPressed)
                 {
-                    calculateScore(savedIndexDice, rolledDice);
+                    roundScore += calculateScore(savedIndexDice, rolledDice);
                     vector<int> newDice = addSelectedDice(savedIndexDice, rolledDice);
                     selectedDice.insert(selectedDice.end(), newDice.begin(), newDice.end());
                     rolledDice = deleteRolledDice(savedIndexDice, rolledDice);
@@ -242,15 +267,28 @@ vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice)
 
 int calculateScore(vector<int> savedIndexDice, vector<int> rolledDice)
 {
-    int score = 0;
+    string combination;
 
     for (int dice : savedIndexDice)
     {
-        score += diceScores[rolledDice[dice]];
+        combination += to_string(rolledDice[dice]);
     }
-    cout << endl;
 
-    return 0;
+    if (diceScores[combination])
+    {
+        return diceScores[combination];
+    }
+    else
+    {
+        int score = 0;
+
+        for (int dice : savedIndexDice)
+        {
+            score += diceScores[to_string(rolledDice[dice])];
+        }
+
+        return score;
+    }
 }
 
 string keabordInput()
