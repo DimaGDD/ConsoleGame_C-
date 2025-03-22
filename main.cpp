@@ -4,19 +4,33 @@
 #include <random>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 using namespace std;
 
 
 void mainGame();
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, string selectedDice, int indexSelectedDice, vector<int> savedIndexDice);
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice);
 vector<int> generateRandomDigits(int numDigits);
 string keabordInput();
 int calculateScore(vector<int> selectedDice, vector<int> rolledDice);
+vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice);
+vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice);
+
+
+
+map<int, int> diceScores;
 
 int main()
 {
     SetConsoleOutputCP(CP_UTF8);
+
+    diceScores[1] = 100;
+    diceScores[5] = 50;
+    diceScores[111] = 1000;
+    diceScores[123456] = 1500;
+    diceScores[23456] = 750;
+    diceScores[12345] = 500;
 
     mainGame();
 
@@ -32,7 +46,7 @@ void mainGame()
     int totalScore; // Общее количество очков
     int maxScore = 1000; // Максимальное количество очков
     vector<int> rolledDice; // Кинутые кости
-    string selectedDice; // Кости, которые мы отложили
+    vector<int> selectedDice; // Кости, которые мы отложили
 
     rolledDice = generateRandomDigits(6);
 
@@ -50,13 +64,13 @@ void mainGame()
 
     while (true)
     {
-        if (rightButtonPressed || leftButtonPressed || spaceButtonPressed || isStartGame)
+        if (rightButtonPressed || leftButtonPressed || spaceButtonPressed || qButtonPressed || eButtonPresses || isStartGame)
         {
             drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice);
             isStartGame = false;
         }
 
-        if (canInput)
+        if (true)
         {
             keabordInputs = keabordInput();
             
@@ -99,6 +113,15 @@ void mainGame()
                 if (!qButtonPressed)
                 {
                     calculateScore(savedIndexDice, rolledDice);
+                    vector<int> newDice = addSelectedDice(savedIndexDice, rolledDice);
+                    selectedDice.insert(selectedDice.end(), newDice.begin(), newDice.end());
+                    rolledDice = deleteRolledDice(savedIndexDice, rolledDice);
+
+                    savedIndexDice.clear();
+                    indexSelectedDice = 0;
+
+                    rolledDice = generateRandomDigits(rolledDice.size());
+
                     qButtonPressed = true;
                     canInput = false;
                 }
@@ -126,16 +149,23 @@ void mainGame()
 }
 
 
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, string selectedDice, int indexSelectedDice, vector<int> savedIndexDice)
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice)
 {
     system("cls");
 
     string rolledDiceString;
+    string selectedDiceString;
 
     for (int digit : rolledDice)
     {
         rolledDiceString += to_string(digit);
         rolledDiceString += " ";
+    }
+
+    for (int digit : selectedDice)
+    {
+        selectedDiceString += to_string(digit);
+        selectedDiceString += " ";
     }
 
     stringstream ss(rolledDiceString);
@@ -171,7 +201,7 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
     cout << setw(3) << totalScore << " / " << setw(4) << maxScore << " | " << result << endl;
     cout << "-----------|----------" << endl;
     
-    cout << setw(10) << roundScore << " | " << selectedDice << endl;
+    cout << setw(10) << roundScore << " | " << selectedDiceString << endl;
 }
 
 vector<int> generateRandomDigits(int numDigits)
@@ -188,11 +218,35 @@ vector<int> generateRandomDigits(int numDigits)
     return digits;
 }
 
-int calculateScore(vector<int> selectedDice, vector<int> rolledDice)
+vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice)
 {
-    for (int dice : selectedDice)
+    vector<int> selectedDice;
+
+    for (int dice : savedIndexDice)
     {
-        cout << rolledDice[dice] << " ";
+        selectedDice.push_back(rolledDice[dice]);
+    }
+
+    return selectedDice;
+}
+
+vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice)
+{
+    for (int dice : savedIndexDice)
+    {
+        rolledDice.erase(rolledDice.begin() + dice);
+    }
+
+    return rolledDice;
+}
+
+int calculateScore(vector<int> savedIndexDice, vector<int> rolledDice)
+{
+    int score = 0;
+
+    for (int dice : savedIndexDice)
+    {
+        score += diceScores[rolledDice[dice]];
     }
     cout << endl;
 
