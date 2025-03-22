@@ -3,12 +3,13 @@
 #include <iomanip>
 #include <random>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
 
 void mainGame();
-void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice, string& selectedDice, int indexSelectedDice);
+void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice, string& selectedDice, int indexSelectedDice, vector<int> savedIndexDice);
 vector<int> generateRandomDigits(int numDigits);
 string keabordInput();
 
@@ -24,14 +25,15 @@ int main()
 void mainGame()
 {
     bool isStartGame = true;
+    
+    // Переменные
+    int roundScore; // Очки раунда
+    int totalScore; // Общее количество очков
+    int maxScore = 1000; // Максимальное количество очков
+    string rolledDice; // Кинутые кости
+    string selectedDice; // Кости, которые мы отложили
 
     vector<int> digits = generateRandomDigits(6);
-
-    int roundScore;
-    int totalScore;
-    int maxScore = 1000;
-    string rolledDice;
-    string selectedDice;
 
     for (int digit : digits)
     {
@@ -39,20 +41,25 @@ void mainGame()
         rolledDice += " ";
     }
 
-    int indexSelectedDice = 0;
+    int indexSelectedDice = 0; // Индекс кости, на которой остановился курсор
+    vector<int> savedIndexDice; // Индекс кости, которые надо отложить
+
+    // Параметры ввода
     string keabordInputs;
     bool rightButtonPressed = false;
     bool leftButtonPressed = false;
+    bool spaceButtonPressed = false;
 
     while (true)
     {
-        if (rightButtonPressed || leftButtonPressed || isStartGame)
+        if (rightButtonPressed || leftButtonPressed || spaceButtonPressed || isStartGame)
         {
-            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice);
+            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice);
             isStartGame = false;
         }
 
         keabordInputs = keabordInput();
+        
         if (keabordInputs == "LEFT")
         {
             if (indexSelectedDice != 0 && !leftButtonPressed)
@@ -69,10 +76,29 @@ void mainGame()
                 rightButtonPressed = true;
             }
         }
+        else if (keabordInputs == "SPACE")
+        {
+            if (!spaceButtonPressed)
+            {
+            auto it = find(savedIndexDice.begin(), savedIndexDice.end(), indexSelectedDice);
+            
+            if (it != savedIndexDice.end())
+            {
+                savedIndexDice.erase(it);
+            }
+            else
+            {
+                savedIndexDice.push_back(indexSelectedDice);
+            }
+
+            spaceButtonPressed = true;
+            }
+        }
         else
         {
             leftButtonPressed = false;
             rightButtonPressed = false;
+            spaceButtonPressed = false;
         }
     }
 
@@ -80,7 +106,7 @@ void mainGame()
 }
 
 
-void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice, string& selectedDice, int indexSelectedDice)
+void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice, string& selectedDice, int indexSelectedDice, vector<int> savedIndexDice)
 {
     system("cls");
 
@@ -91,7 +117,18 @@ void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice,
 
     while (ss >> digit)
     {
-        if (index == indexSelectedDice)
+        bool isSaved = find(savedIndexDice.begin(), savedIndexDice.end(), index) != savedIndexDice.end();
+        bool isSelected = (index == indexSelectedDice);
+
+        if (isSaved && isSelected)
+        {
+            result += "[*" + digit + "*] ";
+        }
+        else if (isSaved)
+        {
+            result += "*" + digit + "* ";
+        }
+        else if (isSelected)
         {
             result += "[" + digit + "] ";
         }
@@ -99,6 +136,7 @@ void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice,
         {
             result += " " + digit + " ";
         }
+
         index++;
     }
 
@@ -124,12 +162,12 @@ vector<int> generateRandomDigits(int numDigits)
 
 string keabordInput()
 {
-    if (GetAsyncKeyState(VK_LEFT))
+    if (GetAsyncKeyState(VK_LEFT) || GetAsyncKeyState(0x41))
     {
         return "LEFT";
     }
     
-    if (GetAsyncKeyState(VK_RIGHT))
+    if (GetAsyncKeyState(VK_RIGHT) || GetAsyncKeyState(0x44))
     {
         return "RIGHT";
     }
