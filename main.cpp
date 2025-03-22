@@ -9,9 +9,10 @@ using namespace std;
 
 
 void mainGame();
-void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice, string& selectedDice, int indexSelectedDice, vector<int> savedIndexDice);
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, string selectedDice, int indexSelectedDice, vector<int> savedIndexDice);
 vector<int> generateRandomDigits(int numDigits);
 string keabordInput();
+int calculateScore(vector<int> selectedDice, vector<int> rolledDice);
 
 int main()
 {
@@ -30,25 +31,22 @@ void mainGame()
     int roundScore; // Очки раунда
     int totalScore; // Общее количество очков
     int maxScore = 1000; // Максимальное количество очков
-    string rolledDice; // Кинутые кости
+    vector<int> rolledDice; // Кинутые кости
     string selectedDice; // Кости, которые мы отложили
 
-    vector<int> digits = generateRandomDigits(6);
-
-    for (int digit : digits)
-    {
-        rolledDice += to_string(digit);
-        rolledDice += " ";
-    }
+    rolledDice = generateRandomDigits(6);
 
     int indexSelectedDice = 0; // Индекс кости, на которой остановился курсор
     vector<int> savedIndexDice; // Индекс кости, которые надо отложить
 
     // Параметры ввода
+    bool canInput = true;
     string keabordInputs;
     bool rightButtonPressed = false;
     bool leftButtonPressed = false;
     bool spaceButtonPressed = false;
+    bool qButtonPressed = false;
+    bool eButtonPresses = false;
 
     while (true)
     {
@@ -58,47 +56,69 @@ void mainGame()
             isStartGame = false;
         }
 
-        keabordInputs = keabordInput();
-        
-        if (keabordInputs == "LEFT")
+        if (canInput)
         {
-            if (indexSelectedDice != 0 && !leftButtonPressed)
-            {
-                indexSelectedDice -= 1;
-                leftButtonPressed = true;
-            }
-        }
-        else if (keabordInputs == "RIGHT")
-        {
-            if (indexSelectedDice != 5 && !rightButtonPressed)
-            {
-                indexSelectedDice += 1;
-                rightButtonPressed = true;
-            }
-        }
-        else if (keabordInputs == "SPACE")
-        {
-            if (!spaceButtonPressed)
-            {
-            auto it = find(savedIndexDice.begin(), savedIndexDice.end(), indexSelectedDice);
+            keabordInputs = keabordInput();
             
-            if (it != savedIndexDice.end())
+            if (keabordInputs == "LEFT")
             {
-                savedIndexDice.erase(it);
+                if (indexSelectedDice != 0 && !leftButtonPressed)
+                {
+                    indexSelectedDice -= 1;
+                    leftButtonPressed = true;
+                }
+            }
+            else if (keabordInputs == "RIGHT")
+            {
+                if (indexSelectedDice != 5 && !rightButtonPressed)
+                {
+                    indexSelectedDice += 1;
+                    rightButtonPressed = true;
+                }
+            }
+            else if (keabordInputs == "SPACE")
+            {
+                if (!spaceButtonPressed)
+                {
+                auto it = find(savedIndexDice.begin(), savedIndexDice.end(), indexSelectedDice);
+                
+                if (it != savedIndexDice.end())
+                {
+                    savedIndexDice.erase(it);
+                }
+                else
+                {
+                    savedIndexDice.push_back(indexSelectedDice);
+                }
+
+                spaceButtonPressed = true;
+                }
+            }
+            else if (keabordInputs == "Q")
+            {
+                if (!qButtonPressed)
+                {
+                    calculateScore(savedIndexDice, rolledDice);
+                    qButtonPressed = true;
+                    canInput = false;
+                }
+            }
+            else if (keabordInputs == "E")
+            {
+                if (!eButtonPresses)
+                {
+                    eButtonPresses = true;
+                    canInput = false;
+                }
             }
             else
             {
-                savedIndexDice.push_back(indexSelectedDice);
+                leftButtonPressed = false;
+                rightButtonPressed = false;
+                spaceButtonPressed = false;
+                qButtonPressed = false;
+                eButtonPresses = false;
             }
-
-            spaceButtonPressed = true;
-            }
-        }
-        else
-        {
-            leftButtonPressed = false;
-            rightButtonPressed = false;
-            spaceButtonPressed = false;
         }
     }
 
@@ -106,11 +126,19 @@ void mainGame()
 }
 
 
-void drawField(int roundScore, int totalScore, int maxScore, string& rolledDice, string& selectedDice, int indexSelectedDice, vector<int> savedIndexDice)
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, string selectedDice, int indexSelectedDice, vector<int> savedIndexDice)
 {
     system("cls");
 
-    stringstream ss(rolledDice);
+    string rolledDiceString;
+
+    for (int digit : rolledDice)
+    {
+        rolledDiceString += to_string(digit);
+        rolledDiceString += " ";
+    }
+
+    stringstream ss(rolledDiceString);
     string digit;
     int index = 0;
     string result = "";
@@ -160,6 +188,17 @@ vector<int> generateRandomDigits(int numDigits)
     return digits;
 }
 
+int calculateScore(vector<int> selectedDice, vector<int> rolledDice)
+{
+    for (int dice : selectedDice)
+    {
+        cout << rolledDice[dice] << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
 string keabordInput()
 {
     if (GetAsyncKeyState(VK_LEFT) || GetAsyncKeyState(0x41))
@@ -175,6 +214,16 @@ string keabordInput()
     if (GetAsyncKeyState(VK_SPACE))
     {
         return "SPACE";
+    }
+
+    if (GetAsyncKeyState(0x51))
+    {
+        return "Q";
+    }
+
+    if (GetAsyncKeyState(0x45))
+    {
+        return "E";
     }
 
     return "NONE";
