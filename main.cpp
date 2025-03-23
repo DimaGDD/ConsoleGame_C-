@@ -12,7 +12,7 @@ using namespace std;
 
 
 void mainGame(); // Основная логика игры
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound); // Рисуем и обновляем игровое поле
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound, bool canContinue); // Рисуем и обновляем игровое поле
 vector<int> generateRandomDigits(int numDigits); // Генерируем броски костей
 string keabordInput(); // Отслеживание нажатия клавиатуры
 int calculateScore(vector<int> selectedDice, vector<int> rolledDice); // Подсчитываем количество очков
@@ -20,7 +20,8 @@ bool checkRolledDiceCombination(vector<int> rolledDice); // Проверка в�
 bool checkCombination(vector<int> savedIndexDice, vector<int> rolledDice); // Проверяем валидность комбинаций
 vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice); // Добавляем в массив кости, которые мы откладываем
 vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice); // Убираем кости из основного потока, которые мы отложили
-
+void endGame(bool isWin); // Конец игры
+void setColor(int color); // Изменение цвета текста
 
 int main()
 {
@@ -64,7 +65,7 @@ void mainGame()
     {
         if (rightButtonPressed || leftButtonPressed || spaceButtonPressed || qButtonPressed || eButtonPressed || isStartGame)
         {
-            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice));
+            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice), canContinue);
 
             isStartGame = false;
         }
@@ -155,6 +156,11 @@ void mainGame()
                     totalScore += roundScore;
                     roundScore = 0;
 
+                    if (totalScore >= maxScore)
+                    {
+                        endGame(true);
+                    }
+
                     eButtonPressed = true;
                     canInput = false;
                 }
@@ -174,7 +180,7 @@ void mainGame()
 }
 
 
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound)
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound, bool canContinue)
 {
     system("cls");
 
@@ -223,15 +229,35 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
         index++;
     }
 
+    setColor(15);
     cout << setw(3) << totalScore << " / " << setw(4) << maxScore << " | " << result << endl;
     cout << "-----------|----------" << endl;
     
     cout << setw(10) << roundScore << " | " << selectedDiceString << endl;
 
+    cout << endl << endl << "---------- Раскладка ----------" << endl;
+    cout << "'<' / '>' - передвигаться по костям!" << endl;
+    cout << "'SPACE' - выбрать кость!" << endl << endl;
+
+    if (canContinue)
+    {
+        setColor(10);
+    }
+    else
+    {
+        setColor(12);
+    }
+
+    cout << "'Q' - отложить выбранные кости и продолжить свой ход!" << endl;
+    cout << "'E' - отложить выбранные кости и передать свой ход!" << endl;
+
     if (!continueRound)
     {
-        cout << "Не выпала нужная комбинация. Попробуйте снова..." << endl;
-        this_thread::sleep_for(chrono::seconds(3));
+        setColor(12);
+        cout << endl << "Не выпала нужная комбинация. Попробуйте снова..." << endl;
+        this_thread::sleep_for(chrono::seconds(1));
+
+        endGame(false);
     }
 }
 
@@ -302,6 +328,10 @@ bool checkRolledDiceCombination(vector<int> rolledDice)
 
 bool checkCombination(vector<int> savedIndexDice, vector<int> rolledDice)
 {
+    if (savedIndexDice.empty())
+    {
+        return false;
+    }
     // Проверяем наличие нестандартной комбинации
     string rolledCombination;
 
@@ -467,6 +497,28 @@ int calculateScore(vector<int> savedIndexDice, vector<int> rolledDice)
     }
 
     return score;
+}
+
+void endGame(bool isWin)
+{
+    if (isWin)
+    {
+        setColor(10);
+        cout << "Вы победили!" << endl;
+    }
+    else
+    {
+        setColor(12);
+        cout << "Вы проиграли!" << endl;
+    }
+    
+    this_thread::sleep_for(chrono::seconds(3));
+    exit(0);
+}
+
+void setColor(int color)
+{
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
 
 string keabordInput()
