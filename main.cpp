@@ -21,7 +21,7 @@ bool checkCombination(vector<int> savedIndexDice, vector<int> rolledDice); // П
 vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice); // Добавляем в массив кости, которые мы откладываем
 vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice); // Убираем кости из основного потока, которые мы отложили
 void endGame(bool isWin); // Конец игры
-void setColor(int color); // Изменение цвета текста
+string setColor(string text, string colorCode); // Изменение цвета текста
 
 int main()
 {
@@ -143,6 +143,8 @@ void mainGame()
                         rolledDice = generateRandomDigits(rolledDice.size());
                     }
 
+                    canContinue = checkCombination(savedIndexDice, rolledDice);
+
                     qButtonPressed = true;
                     canInput = false;
                 }
@@ -211,15 +213,18 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
 
         if (isSaved && isSelected)
         {
-            result += "[*" + digit + "*] ";
+            result += setColor("[", "\033[1;35m") + setColor("*", "\033[1;34m") + digit + setColor("*", "\033[1;34m") + setColor("]", "\033[1;35m") + " ";
+            // result += "[*" + digit + "*] ";
         }
         else if (isSaved)
         {
-            result += "*" + digit + "* ";
+            result += setColor("*", "\033[1;34m") + digit + setColor("*", "\033[1;34m") + " ";
+            // result += "*" + digit + "* ";
         }
         else if (isSelected)
         {
-            result += "[" + digit + "] ";
+            result += setColor("[", "\033[1;35m") + digit + setColor("]", "\033[1;35m") + " ";
+            // result += "[" + digit + "] ";
         }
         else
         {
@@ -229,7 +234,7 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
         index++;
     }
 
-    setColor(15);
+    // setColor(15);
     cout << setw(3) << totalScore << " / " << setw(4) << maxScore << " | " << result << endl;
     cout << "-----------|----------" << endl;
     
@@ -241,20 +246,18 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
 
     if (canContinue)
     {
-        setColor(10);
+        cout << setColor("'Q' - отложить выбранные кости и продолжить свой ход!", "\033[0;32m") << endl;
+        cout << setColor("'E' - отложить выбранные кости и передать свой ход!", "\033[0;32m") << endl;
     }
     else
     {
-        setColor(12);
+        cout << setColor("'Q' - отложить выбранные кости и продолжить свой ход!", "\033[0;31m") << endl;
+        cout << setColor("'E' - отложить выбранные кости и передать свой ход!", "\033[0;31m") << endl;
     }
-
-    cout << "'Q' - отложить выбранные кости и продолжить свой ход!" << endl;
-    cout << "'E' - отложить выбранные кости и передать свой ход!" << endl;
 
     if (!continueRound)
     {
-        setColor(12);
-        cout << endl << "Не выпала нужная комбинация. Попробуйте снова..." << endl;
+        cout << endl << endl << setColor("Не выпала нужная комбинация!", "\033[0;31m") << endl << endl;
         this_thread::sleep_for(chrono::seconds(1));
 
         endGame(false);
@@ -503,22 +506,20 @@ void endGame(bool isWin)
 {
     if (isWin)
     {
-        setColor(10);
-        cout << "Вы победили!" << endl;
+        cout << setColor("Вы победили!", "\033[0;32m") << endl;
     }
     else
     {
-        setColor(12);
-        cout << "Вы проиграли!" << endl;
+        cout << setColor("Вы проиграли!", "\033[0;31m") << endl;
     }
     
     this_thread::sleep_for(chrono::seconds(3));
     exit(0);
 }
 
-void setColor(int color)
+string setColor(string text, string colorCode)
 {
-    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+    return colorCode + text + "\033[0m"; 
 }
 
 string keabordInput()
