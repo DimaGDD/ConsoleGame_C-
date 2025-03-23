@@ -298,24 +298,12 @@ bool checkRolledDiceCombination(vector<int> rolledDice)
     {
         switch (dice)
         {
-            case 1:
-                one.push_back(dice);
-                break;
-            case 2:
-                two.push_back(dice);
-                break;
-            case 3:
-                three.push_back(dice);
-                break;
-            case 4:
-                four.push_back(dice);
-                break;
-            case 5:
-                five.push_back(dice);
-                break;
-            case 6:
-                six.push_back(dice);
-                break;
+            case 1: one.push_back(dice); break;
+            case 2: two.push_back(dice); break;
+            case 3: three.push_back(dice); break;
+            case 4: four.push_back(dice); break;
+            case 5: five.push_back(dice); break;
+            case 6: six.push_back(dice); break;
         }
     }
 
@@ -357,24 +345,12 @@ bool checkCombination(vector<int> savedIndexDice, vector<int> rolledDice)
 
         switch (dice)
         {
-            case 1:
-                one.push_back(dice);
-                break;
-            case 2:
-                two.push_back(dice);
-                break;
-            case 3:
-                three.push_back(dice);
-                break;
-            case 4:
-                four.push_back(dice);
-                break;
-            case 5:
-                five.push_back(dice);
-                break;
-            case 6:
-                six.push_back(dice);
-                break;
+            case 1: one.push_back(dice); break;
+            case 2: two.push_back(dice); break;
+            case 3: three.push_back(dice); break;
+            case 4: four.push_back(dice); break;
+            case 5: five.push_back(dice); break;
+            case 6: six.push_back(dice); break;
         }
     }
 
