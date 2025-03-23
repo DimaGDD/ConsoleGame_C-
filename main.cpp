@@ -506,7 +506,7 @@ void endGame(bool isWin)
 {
     if (isWin)
     {
-        cout << setColor("Вы победили!", "\033[0;32m") << endl;
+        cout << endl << endl << setColor("Вы победили!", "\033[0;32m") << endl;
     }
     else
     {
