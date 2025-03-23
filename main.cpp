@@ -5,57 +5,26 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 
 
-void mainGame();
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice);
-vector<int> generateRandomDigits(int numDigits);
-string keabordInput();
-int calculateScore(vector<int> selectedDice, vector<int> rolledDice);
-vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice);
-vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice);
+void mainGame(); // Основная логика игры
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound); // Рисуем и обновляем игровое поле
+vector<int> generateRandomDigits(int numDigits); // Генерируем броски костей
+string keabordInput(); // Отслеживание нажатия клавиатуры
+int calculateScore(vector<int> selectedDice, vector<int> rolledDice); // Подсчитываем количество очков
+bool checkRolledDiceCombination(vector<int> rolledDice); // Проверка выпавших костей на то, может ли игрок продолжить ход дальше
+bool checkCombination(vector<int> savedIndexDice, vector<int> rolledDice); // Проверяем валидность комбинаций
+vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice); // Добавляем в массив кости, которые мы откладываем
+vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice); // Убираем кости из основного потока, которые мы отложили
 
-
-
-map<string, int> diceScores;
 
 int main()
 {
     SetConsoleOutputCP(CP_UTF8);
-
-    diceScores["1"] = 100;
-    diceScores["11"] = 200;
-    diceScores["111"] = 1000;
-    diceScores["1111"] = 2000;
-    diceScores["11111"] = 4000;
-    diceScores["111111"] = 8000;
-    diceScores["222"] = 200;
-    diceScores["2222"] = 400;
-    diceScores["22222"] = 800;
-    diceScores["222222"] = 1600;
-    diceScores["333"] = 300;
-    diceScores["3333"] = 600;
-    diceScores["33333"] = 1200;
-    diceScores["333333"] = 2400;
-    diceScores["444"] = 400;
-    diceScores["4444"] = 800;
-    diceScores["44444"] = 1600;
-    diceScores["444444"] = 3200;
-    diceScores["5"] = 50;
-    diceScores["55"] = 100;
-    diceScores["555"] = 500;
-    diceScores["5555"] = 1000;
-    diceScores["55555"] = 2000;
-    diceScores["555555"] = 4000;
-    diceScores["666"] = 600;
-    diceScores["6666"] = 1200;
-    diceScores["66666"] = 2400;
-    diceScores["666666"] = 4800;
-    diceScores["123456"] = 1500;
-    diceScores["23456"] = 750;
-    diceScores["12345"] = 500;
 
     mainGame();
 
@@ -85,14 +54,30 @@ void mainGame()
     bool leftButtonPressed = false;
     bool spaceButtonPressed = false;
     bool qButtonPressed = false;
-    bool eButtonPresses = false;
+    bool eButtonPressed = false;
 
-    while (true)
+    // Параметры, которые позволят продолжить ход
+    bool canContinue = false; // Можем ли мы отлжожить выбранные кости
+    bool characterStep = true; // Ход игрока
+
+    while (characterStep)
     {
-        if (rightButtonPressed || leftButtonPressed || spaceButtonPressed || qButtonPressed || eButtonPresses || isStartGame)
+        if (rightButtonPressed || leftButtonPressed || spaceButtonPressed || qButtonPressed || eButtonPressed || isStartGame)
         {
-            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice);
+            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice));
+
             isStartGame = false;
+        }
+
+        if (eButtonPressed)
+        {
+            characterStep = false;
+            break;
+        }
+
+        if (!checkRolledDiceCombination(rolledDice))
+        {
+            characterStep = false;
         }
 
         if (true)
@@ -109,7 +94,7 @@ void mainGame()
             }
             else if (keabordInputs == "RIGHT")
             {
-                if (indexSelectedDice != 5 && !rightButtonPressed)
+                if (indexSelectedDice != rolledDice.size() - 1 && !rightButtonPressed)
                 {
                     indexSelectedDice += 1;
                     rightButtonPressed = true;
@@ -130,12 +115,14 @@ void mainGame()
                     savedIndexDice.push_back(indexSelectedDice);
                 }
 
+                canContinue = checkCombination(savedIndexDice, rolledDice);
+
                 spaceButtonPressed = true;
                 }
             }
             else if (keabordInputs == "Q")
             {
-                if (!qButtonPressed)
+                if (!qButtonPressed && canContinue)
                 {
                     roundScore += calculateScore(savedIndexDice, rolledDice);
                     vector<int> newDice = addSelectedDice(savedIndexDice, rolledDice);
@@ -145,17 +132,30 @@ void mainGame()
                     savedIndexDice.clear();
                     indexSelectedDice = 0;
 
-                    rolledDice = generateRandomDigits(rolledDice.size());
+                    if (rolledDice.empty())
+                    {
+                        rolledDice = generateRandomDigits(6);
+                        selectedDice.clear();
+                    }
+                    else
+                    {
+                        rolledDice = generateRandomDigits(rolledDice.size());
+                    }
 
                     qButtonPressed = true;
                     canInput = false;
                 }
             }
-            else if (keabordInputs == "E")
+            else if (keabordInputs == "E" && canContinue)
             {
-                if (!eButtonPresses)
+                if (!eButtonPressed && canContinue)
                 {
-                    eButtonPresses = true;
+                    roundScore += calculateScore(savedIndexDice, rolledDice);
+
+                    totalScore += roundScore;
+                    roundScore = 0;
+
+                    eButtonPressed = true;
                     canInput = false;
                 }
             }
@@ -165,7 +165,7 @@ void mainGame()
                 rightButtonPressed = false;
                 spaceButtonPressed = false;
                 qButtonPressed = false;
-                eButtonPresses = false;
+                eButtonPressed = false;
             }
         }
     }
@@ -174,7 +174,7 @@ void mainGame()
 }
 
 
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice)
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound)
 {
     system("cls");
 
@@ -227,6 +227,12 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
     cout << "-----------|----------" << endl;
     
     cout << setw(10) << roundScore << " | " << selectedDiceString << endl;
+
+    if (!continueRound)
+    {
+        cout << "Не выпала нужная комбинация. Попробуйте снова..." << endl;
+        this_thread::sleep_for(chrono::seconds(3));
+    }
 }
 
 vector<int> generateRandomDigits(int numDigits)
@@ -241,6 +247,121 @@ vector<int> generateRandomDigits(int numDigits)
     }
     
     return digits;
+}
+
+bool checkRolledDiceCombination(vector<int> rolledDice)
+{
+    string rolledCombination;
+
+    for (int digit : rolledDice)
+    {
+        rolledCombination += to_string(digit);
+    }
+
+    if (rolledCombination == "123456" || rolledCombination == "23456" || rolledCombination == "12345")
+    {
+        return true;
+    }
+
+    vector<int> one, two, three, four, five, six;
+
+    for (int dice : rolledDice)
+    {
+        switch (dice)
+        {
+            case 1:
+                one.push_back(dice);
+                break;
+            case 2:
+                two.push_back(dice);
+                break;
+            case 3:
+                three.push_back(dice);
+                break;
+            case 4:
+                four.push_back(dice);
+                break;
+            case 5:
+                five.push_back(dice);
+                break;
+            case 6:
+                six.push_back(dice);
+                break;
+        }
+    }
+
+    if (one.size() != 0 || five.size() != 0 || two.size() >= 3 || three.size() >= 3 || four.size() >= 3 || six.size() >= 3)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool checkCombination(vector<int> savedIndexDice, vector<int> rolledDice)
+{
+    // Проверяем наличие нестандартной комбинации
+    string rolledCombination;
+
+    for (int index : savedIndexDice)
+    {
+        rolledCombination += to_string(rolledDice[index]);
+    }
+
+    if (rolledCombination == "123456" || rolledCombination == "23456" || rolledCombination == "12345")
+    {
+        return true;
+    }
+
+    // Если нестандартной комбанации нет, то ищем обычные комбинации
+    vector<int> one, two, three, four, five, six;
+
+    for (int index : savedIndexDice)
+    {
+        int dice = rolledDice[index];
+
+        switch (dice)
+        {
+            case 1:
+                one.push_back(dice);
+                break;
+            case 2:
+                two.push_back(dice);
+                break;
+            case 3:
+                three.push_back(dice);
+                break;
+            case 4:
+                four.push_back(dice);
+                break;
+            case 5:
+                five.push_back(dice);
+                break;
+            case 6:
+                six.push_back(dice);
+                break;
+        }
+    }
+
+    if ((two.size() < 3 && two.size() > 0) || (three.size() < 3 && three.size() > 0) || (four.size() < 3 && four.size() > 0) || (six.size() < 3 && six.size() > 0))
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+    
+    if (one.size() != 0 || five.size() != 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice)
@@ -267,28 +388,85 @@ vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice)
 
 int calculateScore(vector<int> savedIndexDice, vector<int> rolledDice)
 {
-    string combination;
+    vector<int> one, two, three, four, five, six;
 
-    for (int dice : savedIndexDice)
+    for (int index : savedIndexDice)
     {
-        combination += to_string(rolledDice[dice]);
+        int dice = rolledDice[index];
+
+        switch (dice)
+        {
+            case 1: one.push_back(dice); break;
+            case 2: two.push_back(dice); break;
+            case 3: three.push_back(dice); break;
+            case 4: four.push_back(dice); break;
+            case 5: five.push_back(dice); break;
+            case 6: six.push_back(dice); break;
+        }
     }
 
-    if (diceScores[combination])
+    int score = 0;
+
+    // Проверяем комбинации с удиницой
+    if (one.size() <= 2)
     {
-        return diceScores[combination];
+        score += one.size() * 100;
     }
     else
     {
-        int score = 0;
-
-        for (int dice : savedIndexDice)
+        score += 1000;
+        for (size_t i = 3; i < one.size(); ++i)
         {
-            score += diceScores[to_string(rolledDice[dice])];
+            score *= 2;
         }
-
-        return score;
     }
+
+    // Проверяем кобинации с пятеркой
+    if (five.size() <= 2)
+    {
+        score += five.size() * 50;
+    }
+    else
+    {
+        score += 500;
+        for (size_t i = 3; i < five.size(); ++i)
+        {
+            score *= 2;
+        }
+    }
+
+    // Проверяем комбинации с оставшимися цифрами
+    vector<vector<int>> groups = {two, three, four, six};
+    vector<int> values = {2, 3, 4, 6};
+
+    for (size_t i = 0; i < groups.size(); ++i)
+    {
+        int diceValue = values[i];
+        if (groups[i].size() >= 3)
+        {
+            int baseScore = diceValue * 100;
+            score += baseScore;
+
+            for (size_t j = 3; j < groups[i].size(); ++j)
+            {
+                score *= 2;
+            }
+        }
+    }
+
+    // Проверяем комбинации 1-2-3-4-5-6 (1500 очков)
+    if (!one.empty() && !two.empty() && !three.empty() &&
+        !four.empty() && !five.empty() && !six.empty()) {
+        return 1500;
+    }
+
+    // Проверяем комбинации без 1 (750 очков) или без 6 (500 очков)
+    if (two.size() > 0 && three.size() > 0 && four.size() > 0 && five.size() > 0) {
+        if (!one.empty()) return 750;
+        if (!six.empty()) return 500;
+    }
+
+    return score;
 }
 
 string keabordInput()
