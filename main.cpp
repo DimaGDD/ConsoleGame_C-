@@ -12,7 +12,7 @@ using namespace std;
 
 
 void mainGame(); // Основная логика игры
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound, bool canContinue); // Рисуем и обновляем игровое поле
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound, bool canContinue, int computerScore); // Рисуем и обновляем игровое поле
 vector<int> generateRandomDigits(int numDigits); // Генерируем броски костей
 string keabordInput(); // Отслеживание нажатия клавиатуры
 int calculateScore(vector<int> selectedDice, vector<int> rolledDice); // Подсчитываем количество очков
@@ -22,6 +22,7 @@ vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice);
 vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice); // Убираем кости из основного потока, которые мы отложили
 void endGame(bool isWin); // Конец игры
 string setColor(string text, string colorCode); // Изменение цвета текста
+int computerTurn(int computerTotalScore); // Имитация хода компьютера
 
 int main()
 {
@@ -43,13 +44,14 @@ void mainGame()
     vector<int> rolledDice; // Кинутые кости
     vector<int> selectedDice; // Кости, которые мы отложили
 
+    int computerTotalScor = 0;
+
     rolledDice = generateRandomDigits(6);
 
     int indexSelectedDice = 0; // Индекс кости, на которой остановился курсор
     vector<int> savedIndexDice; // Индекс кости, которые надо отложить
 
     // Параметры ввода
-    bool canInput = true;
     string keabordInputs;
     bool rightButtonPressed = false;
     bool leftButtonPressed = false;
@@ -59,130 +61,152 @@ void mainGame()
 
     // Параметры, которые позволят продолжить ход
     bool canContinue = false; // Можем ли мы отлжожить выбранные кости
-    bool characterStep = true; // Ход игрока
 
-    while (characterStep)
+    while (true)
     {
         if (rightButtonPressed || leftButtonPressed || spaceButtonPressed || qButtonPressed || eButtonPressed || isStartGame)
         {
-            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice), canContinue);
+            drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice), canContinue, computerTotalScor);
 
             isStartGame = false;
         }
 
-        if (eButtonPressed)
-        {
-            characterStep = false;
-            break;
-        }
-
         if (!checkRolledDiceCombination(rolledDice))
         {
-            characterStep = false;
+            computerTotalScor = computerTurn(computerTotalScor);
+
+            if (computerTotalScor >= maxScore)
+            {
+                drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice), canContinue, computerTotalScor);
+                endGame(false);
+            }
+            else
+            {
+                roundScore = 0;
+                rolledDice = generateRandomDigits(6);
+                selectedDice.clear();
+
+                continue;
+            }
         }
 
-        if (true)
+        keabordInputs = keabordInput();
+        
+        if (keabordInputs == "LEFT")
         {
-            keabordInputs = keabordInput();
+            if (indexSelectedDice != 0 && !leftButtonPressed)
+            {
+                indexSelectedDice -= 1;
+                leftButtonPressed = true;
+            }
+        }
+        else if (keabordInputs == "RIGHT")
+        {
+            if (indexSelectedDice != rolledDice.size() - 1 && !rightButtonPressed)
+            {
+                indexSelectedDice += 1;
+                rightButtonPressed = true;
+            }
+        }
+        else if (keabordInputs == "SPACE")
+        {
+            if (!spaceButtonPressed)
+            {
+            auto it = find(savedIndexDice.begin(), savedIndexDice.end(), indexSelectedDice);
             
-            if (keabordInputs == "LEFT")
+            if (it != savedIndexDice.end())
             {
-                if (indexSelectedDice != 0 && !leftButtonPressed)
-                {
-                    indexSelectedDice -= 1;
-                    leftButtonPressed = true;
-                }
+                savedIndexDice.erase(it);
             }
-            else if (keabordInputs == "RIGHT")
+            else
             {
-                if (indexSelectedDice != rolledDice.size() - 1 && !rightButtonPressed)
-                {
-                    indexSelectedDice += 1;
-                    rightButtonPressed = true;
-                }
+                savedIndexDice.push_back(indexSelectedDice);
             }
-            else if (keabordInputs == "SPACE")
+
+            canContinue = checkCombination(savedIndexDice, rolledDice);
+
+            spaceButtonPressed = true;
+            }
+        }
+        else if (keabordInputs == "Q")
+        {
+            if (!qButtonPressed && canContinue)
             {
-                if (!spaceButtonPressed)
+                roundScore += calculateScore(savedIndexDice, rolledDice);
+                vector<int> newDice = addSelectedDice(savedIndexDice, rolledDice);
+                selectedDice.insert(selectedDice.end(), newDice.begin(), newDice.end());
+                rolledDice = deleteRolledDice(savedIndexDice, rolledDice);
+
+                savedIndexDice.clear();
+                indexSelectedDice = 0;
+
+                if (rolledDice.empty())
                 {
-                auto it = find(savedIndexDice.begin(), savedIndexDice.end(), indexSelectedDice);
-                
-                if (it != savedIndexDice.end())
-                {
-                    savedIndexDice.erase(it);
+                    rolledDice = generateRandomDigits(6);
+                    selectedDice.clear();
                 }
                 else
                 {
-                    savedIndexDice.push_back(indexSelectedDice);
+                    rolledDice = generateRandomDigits(rolledDice.size());
                 }
 
                 canContinue = checkCombination(savedIndexDice, rolledDice);
 
-                spaceButtonPressed = true;
-                }
+                qButtonPressed = true;
             }
-            else if (keabordInputs == "Q")
+        }
+        else if (keabordInputs == "E" && canContinue)
+        {
+            if (!eButtonPressed && canContinue)
             {
-                if (!qButtonPressed && canContinue)
+                roundScore += calculateScore(savedIndexDice, rolledDice);
+
+                totalScore += roundScore;
+                roundScore = 0;
+
+                if (totalScore >= maxScore)
                 {
-                    roundScore += calculateScore(savedIndexDice, rolledDice);
-                    vector<int> newDice = addSelectedDice(savedIndexDice, rolledDice);
-                    selectedDice.insert(selectedDice.end(), newDice.begin(), newDice.end());
-                    rolledDice = deleteRolledDice(savedIndexDice, rolledDice);
+                    drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice), canContinue, computerTotalScor);
+                    endGame(true);
+                }
+                else
+                {
+                    computerTotalScor = computerTurn(computerTotalScor);
 
-                    savedIndexDice.clear();
-                    indexSelectedDice = 0;
-
-                    if (rolledDice.empty())
+                    if (computerTotalScor >= maxScore)
                     {
-                        rolledDice = generateRandomDigits(6);
-                        selectedDice.clear();
+                        drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice), canContinue, computerTotalScor);
+                        endGame(false);
                     }
                     else
                     {
-                        rolledDice = generateRandomDigits(rolledDice.size());
+                        roundScore = 0;
+
+                        rolledDice = generateRandomDigits(6);
+                        selectedDice.clear();
+                        savedIndexDice.clear();
+                        indexSelectedDice = 0;
+
+                        canContinue = checkCombination(savedIndexDice, rolledDice);
                     }
-
-                    canContinue = checkCombination(savedIndexDice, rolledDice);
-
-                    qButtonPressed = true;
-                    canInput = false;
                 }
-            }
-            else if (keabordInputs == "E" && canContinue)
-            {
-                if (!eButtonPressed && canContinue)
-                {
-                    roundScore += calculateScore(savedIndexDice, rolledDice);
 
-                    totalScore += roundScore;
-                    roundScore = 0;
-
-                    if (totalScore >= maxScore)
-                    {
-                        endGame(true);
-                    }
-
-                    eButtonPressed = true;
-                    canInput = false;
-                }
-            }
-            else
-            {
-                leftButtonPressed = false;
-                rightButtonPressed = false;
-                spaceButtonPressed = false;
-                qButtonPressed = false;
-                eButtonPressed = false;
+                eButtonPressed = true;
             }
         }
+        else
+        {
+            leftButtonPressed = false;
+            rightButtonPressed = false;
+            spaceButtonPressed = false;
+            qButtonPressed = false;
+            eButtonPressed = false;
+        }
     }
-
-    cin.get();
 }
 
 
-void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound, bool canContinue)
+void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledDice, vector<int> selectedDice, int indexSelectedDice, vector<int> savedIndexDice, bool continueRound, bool canContinue, int computerScore)
 {
     system("cls");
 
@@ -235,6 +259,7 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
     }
 
     // setColor(15);
+    cout << "Счет противника >> " << computerScore << endl << endl; 
     cout << setw(3) << totalScore << " / " << setw(4) << maxScore << " | " << result << endl;
     cout << "-----------|----------" << endl;
     
@@ -259,8 +284,6 @@ void drawField(int roundScore, int totalScore, int maxScore, vector<int> rolledD
     {
         cout << endl << endl << setColor("Не выпала нужная комбинация!", "\033[0;31m") << endl << endl;
         this_thread::sleep_for(chrono::seconds(1));
-
-        endGame(false);
     }
 }
 
@@ -496,6 +519,66 @@ void endGame(bool isWin)
 string setColor(string text, string colorCode)
 {
     return colorCode + text + "\033[0m"; 
+}
+
+int computerTurn(int computerTotalScore)
+{
+    int computerRoundScore = 0;
+    vector<int> rolledDice = generateRandomDigits(6);
+    vector<int> selectedDice;
+    bool canContinue = true;
+
+    while (canContinue && !rolledDice.empty())
+    {
+        // Проверяем, есть ли комбинация для набора очков
+        if (!checkRolledDiceCombination(rolledDice))
+        {
+            break;
+        }
+
+        // Ищем лучшую комбинацию
+        vector<int> bestCombination;
+        int bestScore = 0;
+
+        // Перебираем все возможные комбинации
+        for (int i = 0; i < static_cast<int>(rolledDice.size()); i++)
+        {
+            vector<int> currentCombination = {i};
+            if (checkCombination(currentCombination, rolledDice))
+            {
+                int currentScore = calculateScore(currentCombination, rolledDice);
+                if (currentScore > bestScore)
+                {
+                    bestScore = currentScore;
+                    bestCombination = currentCombination;
+                }
+            }
+        }
+
+        if (bestCombination.empty())
+        {
+            break;
+        }
+
+        // Добавляем очки и обновляем кости
+        computerRoundScore += bestScore;
+        selectedDice = addSelectedDice(bestCombination, rolledDice);
+        rolledDice = deleteRolledDice(bestCombination, rolledDice);
+
+        // Решаем, продолжать ли ход
+        if (rand() % 2 == 0 && !rolledDice.empty())
+        {
+            rolledDice = generateRandomDigits(rolledDice.size());
+        }
+        else
+        {
+            canContinue = false;
+        }
+    }
+
+    computerTotalScore += computerRoundScore;
+
+    return computerTotalScore;
 }
 
 string keabordInput()
