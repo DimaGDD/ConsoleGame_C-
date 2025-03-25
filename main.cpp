@@ -40,7 +40,7 @@ void mainGame()
     // Переменные
     int roundScore = 0; // Очки раунда
     int totalScore = 0; // Общее количество очков
-    int maxScore = 1000; // Максимальное количество очков
+    int maxScore = 4000; // Максимальное количество очков
     vector<int> rolledDice; // Кинутые кости
     vector<int> selectedDice; // Кости, которые мы отложили
 
