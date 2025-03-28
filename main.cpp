@@ -35,7 +35,7 @@ int main()
     SetConsoleOutputCP(CP_UTF8);
 
     system("cls");
-    typewriterEffect();
+    // typewriterEffect();
 
     mainGame();
 
