@@ -22,7 +22,7 @@ vector<int> addSelectedDice(vector<int> savedIndexDice, vector<int> rolledDice);
 vector<int> deleteRolledDice(vector<int> savedIndexDice, vector<int> rolledDice); // Убираем кости из основного потока, которые мы отложили
 void endGame(bool isWin); // Конец игры
 string setColor(string text, string colorCode); // Изменение цвета текста
-int computerTurn(int computerTotalScore); // Имитация хода компьютера
+int computerTurn(int computerTotalScore, int playerScore); // Имитация хода компьютера
 
 int main()
 {
@@ -73,7 +73,7 @@ void mainGame()
 
         if (!checkRolledDiceCombination(rolledDice))
         {
-            computerTotalScor = computerTurn(computerTotalScor);
+            computerTotalScor = computerTurn(computerTotalScor, totalScore);
 
             if (computerTotalScor >= maxScore)
             {
@@ -171,7 +171,7 @@ void mainGame()
                 }
                 else
                 {
-                    computerTotalScor = computerTurn(computerTotalScor);
+                    computerTotalScor = computerTurn(computerTotalScor, totalScore);
 
                     if (computerTotalScor >= maxScore)
                     {
@@ -521,7 +521,7 @@ string setColor(string text, string colorCode)
     return colorCode + text + "\033[0m"; 
 }
 
-int computerTurn(int computerTotalScore)
+int computerTurn(int computerTotalScore, int playerScore)
 {
     int computerRoundScore = 0;
     vector<int> rolledDice = generateRandomDigits(6);
@@ -565,8 +565,19 @@ int computerTurn(int computerTotalScore)
         selectedDice = addSelectedDice(bestCombination, rolledDice);
         rolledDice = deleteRolledDice(bestCombination, rolledDice);
 
+        int randomizer;
+
+        if (playerScore - computerTotalScore > 1000)
+        {
+            randomizer = 1;
+        }
+        else
+        {
+            randomizer = 2;
+        }
+        
         // Решаем, продолжать ли ход
-        if (rand() % 2 == 0 && !rolledDice.empty())
+        if (rand() % randomizer == 0 && !rolledDice.empty())
         {
             rolledDice = generateRandomDigits(rolledDice.size());
         }
