@@ -95,6 +95,8 @@ void mainGame()
                 rolledDice = generateRandomDigits(6);
                 selectedDice.clear();
 
+                drawField(roundScore, totalScore, maxScore, rolledDice, selectedDice, indexSelectedDice, savedIndexDice, checkRolledDiceCombination(rolledDice), canContinue, computerTotalScor);
+
                 continue;
             }
         }
